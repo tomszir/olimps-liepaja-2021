@@ -36,7 +36,6 @@ module.exports = merge(common, {
   plugins: [
     new DuplicateCheckerPlugin(),
     new BundleAnalyzerPlugin(),
-    new MinifyPlugin(),
     new CompressionPlugin(),
   ],
 });

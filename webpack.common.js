@@ -6,6 +6,7 @@ module.exports = {
   entry: './src/index.tsx',
   output: {
     path: path.join(__dirname, '/dist'),
+    publicPath: '/',
     filename: '[name].bundle.js',
   },
   resolve: {
@@ -37,28 +38,6 @@ module.exports = {
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
-      },
-      {
-        test: /\.(jpe?g|png)$/,
-        loader: 'responsive-loader',
-        options: {
-          name: '[name]-[width].[hash].[ext]',
-          outputPath: 'assets/',
-          publicPath: 'assets/',
-          sizes: [380, 768, 1024, 1368],
-          placeholder: true,
-          placeholderSize: 40,
-          format: 'jpg',
-          quality: 70,
-        },
-      },
-      {
-        test: /\.svg$/,
-        loader: 'svg-url-loader',
-        options: {
-          limit: 10 * 1024,
-          noquotes: true,
-        },
       },
     ],
   },
