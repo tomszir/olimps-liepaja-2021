@@ -43,12 +43,18 @@ export type GameState = {
   score: number;
   time: number;
   points: ChallengePoint[];
-  visitedPoints: { answeredCorrectly: boolean; point: ChallengePoint }[];
+  visitedPoints: {
+    answeredCorrectly: boolean;
+    point: ChallengePoint;
+    reanswer: boolean;
+  }[];
   currentPosition: [number, number];
   selectedPoint: ChallengePoint | null;
   activeQuestion: PointQuestion | null;
   activeQuestionShuffle: string[];
   activeQuestionAnswer: number;
+  activeQuestionReanswer: boolean;
+  activeQuestionReanswerDisabled: boolean;
   ended: boolean;
 };
 

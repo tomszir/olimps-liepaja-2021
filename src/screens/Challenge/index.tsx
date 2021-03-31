@@ -99,6 +99,8 @@ S.Modal = styled.div`
   p {
     color: #e3e3e3;
     font-family: 'Poppins', sans-serif;
+    width: 100%;
+    text-align: center;
   }
 
   ${mobile(`
@@ -193,6 +195,20 @@ S.Divider = styled.div`
   height: 10px;
 `;
 
+S.HDivider = styled.div`
+  width: 6px;
+`;
+
+S.ButtonDiv = styled.div`
+  display: flex;
+
+  & > * {
+    & + & {
+      margin-left: 6px;
+    }
+  }
+`;
+
 export type RouteParams = {
   id?: string;
 };
@@ -241,6 +257,8 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
     activeQuestion: null,
     activeQuestionAnswer: -1,
     activeQuestionShuffle: [],
+    activeQuestionReanswer: false,
+    activeQuestionReanswerDisabled: true,
     ended: false,
   });
 
@@ -275,7 +293,7 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
         },
       ) / getVisionRange();
 
-    return (distance > 1 ? Math.max(distance * 0.7, 60 * 11) : distance) * 60 * 10;
+    return (distance > 1 ? Math.max(distance * 0.7, 1.1) : distance) * 60 * 10;
   };
 
   const isPointSelected = (point: ChallengePoint) => {
@@ -410,6 +428,8 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
                   updateGameState({
                     currentPosition: [selectedPoint.lat, selectedPoint.lng],
                     activeQuestion,
+                    activeQuestionReanswer: false,
+                    activeQuestionReanswerDisabled: false,
                     activeQuestionShuffle: shuffle([
                       activeQuestion.correctAnswer,
                       ...activeQuestion.incorrectAnswers,
@@ -439,12 +459,17 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
                       const answeredCorrectly =
                         q == gameState.activeQuestion?.correctAnswer;
                       const score = gameState.score + (answeredCorrectly ? 100 : 0);
-                      const turn = gameState.turn + 1;
-                      const time = gameState.time + 180;
+                      const turn = gameState.activeQuestionReanswer
+                        ? gameState.turn
+                        : gameState.turn + 1;
+                      const time = gameState.activeQuestionReanswer
+                        ? gameState.time + 60
+                        : gameState.time + 180;
                       const visitedPoints = [
                         ...gameState.visitedPoints,
                         {
                           answeredCorrectly,
+                          reanswer: gameState.activeQuestionReanswer,
                           point: gameState.selectedPoint as ChallengePoint,
                         },
                       ];
@@ -455,6 +480,8 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
                         score,
                         visitedPoints,
                         activeQuestionAnswer,
+                        activeQuestionReanswer:
+                          !answeredCorrectly && !gameState.activeQuestionReanswer,
                       });
                     }}
                     type={
@@ -477,30 +504,64 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
                 );
               })}
               <S.Divider />
-              <Button
-                label='Turpināt'
-                type='primary'
-                disabled={gameState.activeQuestionAnswer === -1}
-                onClick={() => {
-                  const { visitedPoints, points } = gameState;
+              <S.ButtonDiv>
+                <Button
+                  label='Turpināt'
+                  type='primary'
+                  disabled={gameState.activeQuestionAnswer === -1}
+                  onClick={() => {
+                    const { visitedPoints, points } = gameState;
+                    const ended =
+                      visitedPoints.filter(({ reanswer }) => !reanswer).length ===
+                      points.length;
 
-                  updateGameState({
-                    activeQuestion: null,
-                    activeQuestionShuffle: [],
-                    activeQuestionAnswer: -1,
-                    ended: visitedPoints.length === points.length,
-                  });
+                    updateGameState({
+                      activeQuestion: null,
+                      activeQuestionShuffle: [],
+                      activeQuestionAnswer: -1,
+                      ended,
+                    });
 
-                  if (gameState.ended) {
-                    return;
-                  }
+                    if (gameState.ended) {
+                      return;
+                    }
 
-                  // Game has ended, open modal
-                  if (visitedPoints.length === points.length) {
-                    endChallenge();
-                  }
-                }}
-              />
+                    // Game has ended, open modal
+                    if (ended) {
+                      endChallenge();
+                    }
+                  }}
+                />
+                <S.HDivider />
+                {gameState.activeQuestionReanswer && (
+                  <Button
+                    label='Atbildēt vēlreiz'
+                    disabled={gameState.activeQuestionReanswerDisabled}
+                    onClick={() => {
+                      const { selectedPoint } = gameState;
+
+                      if (!selectedPoint) {
+                        return;
+                      }
+
+                      const activeQuestion =
+                        selectedPoint.questions[
+                          Math.floor(Math.random() * selectedPoint.questions.length)
+                        ];
+
+                      updateGameState({
+                        activeQuestion,
+                        activeQuestionAnswer: -1,
+                        activeQuestionReanswerDisabled: true,
+                        activeQuestionShuffle: shuffle([
+                          activeQuestion.correctAnswer,
+                          ...activeQuestion.incorrectAnswers,
+                        ]),
+                      });
+                    }}
+                  />
+                )}
+              </S.ButtonDiv>
             </S.Modal>
           </S.MapOverlay>
         )}
@@ -510,7 +571,7 @@ const Challenge: React.FC<RouteComponentProps<RouteParams>> = ({ match }) => {
               <h2>Izaicinājums ir beidzies!</h2>
               <p>
                 Ceļojumā pavadītais laiks bija{' '}
-                <strong>{(gameState.time / 3600 + 8).toFixed(0)} stundas</strong> un
+                <strong>{(gameState.time / 3600).toFixed(0)} stundas</strong> un{' '}
                 <strong>{((gameState.time % 3600) / 60).toFixed(0)} minūtes</strong>
               </p>
             </S.Modal>
